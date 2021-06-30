@@ -1,21 +1,21 @@
 import tkinter as tk
 import os
 from PIL import Image, ImageTk
+import json
 
 
 file_extensions = ['png', 'PNG', 'jpg', 'JPG', 'jpeg', 'JPEG']
 
 
 class PictureFrame(object):
-    def __init__(self, img_folder_path='/Users/max/Documents/tk/PPGG Pictures'):
+    def __init__(self, config_file='./picture_frame.json'): #img_folder_path='/Users/max/Documents/tk/PPGG Pictures'):
+        img_folder_path, self.image_index, self.counter, self.counter_max, font_size, pause_size, x, y = self._read_config_file(config_file)
+
         self.app = tk.Tk()
         self.app.attributes('-fullscreen', True)
+        self.app.geometry(f'{x}x{y}')
 
         self.pause = False
-
-        self.image_index = 0
-        self.counter = 0
-        self.counter_max = 3
         self._auto_next_pic()
 
         self.img_folder_path = img_folder_path
@@ -49,7 +49,7 @@ class PictureFrame(object):
         self.first_resize = True
 
         ## create pause icon, don't place yet
-        self.pause_image = ImageTk.PhotoImage(image=Image.open('./pause.png').resize((100, 100)))
+        self.pause_image = ImageTk.PhotoImage(image=Image.open('./pause.png').resize((pause_size, pause_size)))
         self.canvas_pause = self.canvas.create_image(
             1000,1000,
             image=self.pause_image,
@@ -63,7 +63,7 @@ class PictureFrame(object):
             0,
             text=f'{self.image_index}/{len(self.images)}',
             fill='white',
-            font=('Helvetica', 24, 'bold'),
+            font=('Helvetica', font_size, 'bold'),
             anchor=tk.SE
         )
 
@@ -74,6 +74,21 @@ class PictureFrame(object):
         self.image_index_prev = (self.image_index-1)%len(self.images)
         self.image_next = Image.open(self.images[self.image_index_next])
         self.image_prev = Image.open(self.images[self.image_index_prev])
+
+
+    def _read_config_file(self, config_file):
+        with open(config_file, 'r') as f:
+            conf = json.load(f)
+        img_folder_path = conf['img_folder_path']
+        image_index = conf['image_index']
+        counter = conf['counter']
+        counter_max = conf['counter_max']
+        font_size = conf['font_size']
+        pause_size = conf['pause_size']
+        x = conf['x']
+        y = conf['y']
+
+        return (img_folder_path, image_index, counter, counter_max, font_size, pause_size, x, y)
 
 
     def _auto_next_pic(self):
