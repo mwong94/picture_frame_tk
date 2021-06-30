@@ -19,10 +19,7 @@ from PIL import ImageTk
 t = Tk()
 t.title("Transparency")
 
-frame = Frame(t)
-frame.pack()
-
-canvas = Canvas(frame, bg="blue", width=500, height=500)
+canvas = Canvas(t, bg="blue", width=500, height=500)
 canvas.pack()
 
 img = ImageTk.PhotoImage(file='PPGG Pictures/210304231711998783.png')

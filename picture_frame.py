@@ -1,6 +1,5 @@
 import tkinter as tk
 import os
-import random
 from PIL import Image, ImageTk
 
 
@@ -10,7 +9,6 @@ file_extensions = ['png', 'PNG', 'jpg', 'JPG', 'jpeg', 'JPEG']
 class PictureFrame(object):
     def __init__(self, img_folder_path='/Users/max/Documents/tk/PPGG Pictures'):
         self.app = tk.Tk()
-        self.app.configure(background='black')
         self.app.attributes('-fullscreen', True)
 
         self.pause = False
@@ -24,22 +22,52 @@ class PictureFrame(object):
         self._update_image_list()
 
         ## create canvas to draw on
+        self.canvas = tk.Canvas(
+            self.app,
+            bg='black',
+            bd=0,
+            highlightthickness=0
+        )
+        self.canvas.pack(fill=tk.BOTH, expand=True)
+        self.canvas.update()
 
         ## create Photo Label, bind keys, place centered and focus
         self.image = Image.open(self.images[self.image_index])
         self.image_copy = self.image.copy()
-        self.photo_label = tk.Label(self.app, image=ImageTk.PhotoImage(self.image), bd=0)
-        self.photo_label.bind('<KeyRelease-Left>', self._prev_pic)
-        self.photo_label.bind('<KeyRelease-Right>', self._next_pic)
-        self.photo_label.bind('<space>', self._pause)
-        self.photo_label.bind('<Configure>', self._resize_image)
-        self.photo_label.pack(fill=tk.NONE, expand=tk.YES)
-        self.photo_label.focus_set()
+        self.photo_image = ImageTk.PhotoImage(self.image)
+        self.canvas_image = self.canvas.create_image(
+            self.canvas.winfo_width()/2,
+            self.canvas.winfo_height()/2,
+            image=self.photo_image,
+            anchor=tk.CENTER
+        )
+        self.canvas.bind('<KeyRelease-Left>', self._prev_pic)
+        self.canvas.bind('<KeyRelease-Right>', self._next_pic)
+        self.canvas.bind('<space>', self._pause)
+        self.canvas.bind('<Configure>', self._resize)
+        self.canvas.focus_set()
+        self.first_resize = True
 
         ## create pause icon, don't place yet
-        self.pause_image = Image.open('./pause.png')
-        self.pause_label = tk.Label(self.app, image=ImageTk.PhotoImage(self.pause_image), bd=0)
-        self.pause_label.place(x=0, y=0)
+        self.pause_image = ImageTk.PhotoImage(image=Image.open('./pause.png').resize((100, 100)))
+        self.canvas_pause = self.canvas.create_image(
+            1000,1000,
+            image=self.pause_image,
+            state=tk.HIDDEN,
+            anchor=tk.CENTER
+        )
+
+        ## photo number label
+        self.number_label = self.canvas.create_text(
+            0,
+            0,
+            text=f'{self.image_index}/{len(self.images)}',
+            fill='white',
+            font=('Helvetica', 24, 'bold'),
+            anchor=tk.SE
+        )
+
+        self._resize(event=None)
 
         ## preload next and previous
         self.image_index_next = (self.image_index+1)%len(self.images)
@@ -70,7 +98,7 @@ class PictureFrame(object):
         self.app.after(60*1000, self._update_image_list)
 
 
-    def _resize_image(self, event):
+    def _resize(self, event):
         max_width = self.app.winfo_width()
         max_height = self.app.winfo_height()
 
@@ -87,33 +115,76 @@ class PictureFrame(object):
             new_width = max_width
             new_height = max_height
         
-        resized_image = self.image_copy.resize((new_width, new_height))
+        resized_image = self.image_copy.resize((new_width, new_height)) #, Image.ANTIALIAS)
         resized_photo = ImageTk.PhotoImage(resized_image)
-        self.photo_label.configure(image=resized_photo)
-        self.photo_label.image = resized_photo
+        self.photo_image = resized_photo
+        self.canvas.itemconfig(
+            self.canvas_image,
+            image=self.photo_image
+        )
+
+        ## move image
+        img_x, img_y = self.canvas.coords(self.canvas_image)
+        canvas_center_x = self.canvas.winfo_width()/2
+        canvas_center_y = self.canvas.winfo_height()/2
+
+        move_x = round((canvas_center_x - img_x) / 2, 2)
+        move_y = round((canvas_center_y - img_y) / 2, 2)
+        
+        if not self.first_resize: self.canvas.move(self.canvas_image, move_x, move_y)
+        self.first_resize = False
+
+        ## move pause image
+        pause_x, pause_y = self.canvas.coords(self.canvas_pause)
+        target_x = 75
+        target_y = self.canvas.winfo_height() - target_x
+        
+        move_x = round((target_x - pause_x), 2)
+        move_y = round((target_y - pause_y), 2)
+
+        self.canvas.move(self.canvas_pause, move_x, move_y)
+
+        ## move numbers
+        number_x, number_y = self.canvas.coords(self.number_label)
+        target_x = self.canvas.winfo_width() - 20
+        target_y = self.canvas.winfo_height() - 20
+        
+        move_x = round((target_x - number_x), 2)
+        move_y = round((target_y - number_y), 2)
+
+        self.canvas.move(self.number_label, move_x, move_y)
+
+
         self.image = resized_image
 
 
     def _update_pic(self, event, type):
         if type == 'next':
             new_photo = ImageTk.PhotoImage(self.image_next)
-            self.photo_label.configure(image=new_photo)
-            self.photo_label.image = new_photo
 
-            self.image_prev = self.image
+            self.image_prev = self.image_copy
             self.image = self.image_next
             self.image_next = Image.open(self.images[self.image_index_next])
         elif type == 'prev':
             new_photo = ImageTk.PhotoImage(self.image_prev)
-            self.photo_label.configure(image=new_photo)
-            self.photo_label.image = new_photo
 
-            self.image_next = self.image
+            self.image_next = self.image_copy
             self.image = self.image_prev
             self.image_prev = Image.open(self.images[self.image_index_prev])
 
+        self.canvas.itemconfig(
+            self.canvas_image,
+            image=new_photo
+        )
+
+        self.canvas.itemconfig(
+            self.number_label,
+            text=f'{self.image_index}/{len(self.images)}'
+        )
+
         self.image_copy = self.image.copy()
-        self._resize_image(event)
+        print('resizing???')
+        self._resize(event)
 
 
     def _prev_pic(self, event):
@@ -136,7 +207,8 @@ class PictureFrame(object):
 
     def _pause(self, event):
         self.pause = False if self.pause else True
-
+        new_state = tk.NORMAL if self.pause else tk.HIDDEN
+        self.canvas.itemconfigure(self.canvas_pause, state=new_state)
 
 
 
