@@ -2,13 +2,14 @@ import tkinter as tk
 import os
 from PIL import Image, ImageTk
 import json
+from pathlib import Path
 
 
 file_extensions = ['png', 'PNG', 'jpg', 'JPG', 'jpeg', 'JPEG']
 
 
 class PictureFrame(object):
-    def __init__(self, config_file='~/.picture_frame.json'):
+    def __init__(self, config_file=f'{Path.home()}/.picture_frame.json'):
         img_folder_path, self.image_index, self.counter, self.counter_max, font_size, pause_size, x, y = self._read_config_file(config_file)
 
         self.app = tk.Tk()
