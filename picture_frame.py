@@ -8,7 +8,7 @@ file_extensions = ['png', 'PNG', 'jpg', 'JPG', 'jpeg', 'JPEG']
 
 
 class PictureFrame(object):
-    def __init__(self, config_file='./picture_frame.json'): #img_folder_path='/Users/max/Documents/tk/PPGG Pictures'):
+    def __init__(self, config_file='~/.picture_frame.json'):
         img_folder_path, self.image_index, self.counter, self.counter_max, font_size, pause_size, x, y = self._read_config_file(config_file)
 
         self.app = tk.Tk()
