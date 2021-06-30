@@ -1,5 +1,6 @@
 import tkinter as tk
 import os
+import sys
 from PIL import Image, ImageTk
 import json
 from pathlib import Path
@@ -50,7 +51,7 @@ class PictureFrame(object):
         self.first_resize = True
 
         ## create pause icon, don't place yet
-        self.pause_image = ImageTk.PhotoImage(image=Image.open('./pause.png').resize((pause_size, pause_size)))
+        self.pause_image = ImageTk.PhotoImage(image=Image.open(f'{os.path.dirname(sys.argv[0])}/pause.png').resize((pause_size, pause_size)))
         self.canvas_pause = self.canvas.create_image(
             1000,1000,
             image=self.pause_image,
